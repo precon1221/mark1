@@ -145,6 +145,7 @@ body {
     </main>
   <script>const icons = document.querySelectorAll(".icon");
 let currentSound;
+const pairedIcons = { "01": "03", "03": "01" };
 
 const activateIcon = (icon) => {
   const id = icon.dataset.id;
@@ -153,7 +154,18 @@ const activateIcon = (icon) => {
   const activeSource = icon.dataset.active || `assets/active/icon-${id}.svg`;
   const sound = new Audio(icon.dataset.sound || `assets/audio/system-${id}.wav`);
 
-  image.src = activeSource;
+  const partnerId = pairedIcons[id];
+  if (partnerId) {
+    const partner = document.querySelector(`.icon[data-id="${partnerId}"]`);
+    icon.showingPartner = !icon.showingPartner;
+    image.src = icon.showingPartner
+      ? partner.dataset.base || `assets/icons/icon-${partnerId}.jpg`
+      : baseSource;
+    image.alt = icon.showingPartner ? partner.dataset.originalAlt : icon.dataset.originalAlt;
+    icon.setAttribute("aria-pressed", String(icon.showingPartner));
+  } else {
+    image.src = activeSource;
+  }
   icon.classList.add("is-active");
   sound.volume = 0.42;
   if (currentSound) currentSound.pause();
@@ -162,12 +174,17 @@ const activateIcon = (icon) => {
 
   window.clearTimeout(icon.swapTimer);
   icon.swapTimer = window.setTimeout(() => {
-    image.src = baseSource;
+    if (!partnerId) image.src = baseSource;
     icon.classList.remove("is-active");
   }, 1800);
 };
 
 icons.forEach((icon) => {
+  icon.dataset.originalAlt = icon.querySelector("img").alt;
+  if (pairedIcons[icon.dataset.id]) {
+    icon.setAttribute("aria-label", "Switch between white orbital core and pink astral compass");
+    icon.setAttribute("aria-pressed", "false");
+  }
   const activeImage = new Image();
   activeImage.src = icon.dataset.active || `assets/active/icon-${icon.dataset.id}.svg`;
   icon.addEventListener("click", () => activateIcon(icon));
